@@ -7,7 +7,9 @@ import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Date;
+import java.util.UUID;
 
+import com.itmaspro.general.domain.model.dto.CustomerDto;
 import com.itmaspro.general.domain.model.enums.OrderServiceErrorCode;
 import com.itmaspro.general.domain.model.enums.OrderStatus;
 import com.itmaspro.orders.domain.model.OrderEntity;
@@ -18,62 +20,71 @@ import com.itmaspro.orders.logic.exceptions.EmptyPayloadException;
 import com.itmaspro.orders.logic.exceptions.IdMismatchException;
 import com.itmaspro.orders.logic.exceptions.OrderServiceException;
 import com.itmaspro.orders.logic.exceptions.ResourceNotFoundException;
+import com.itmaspro.orders.rest.v1.client.CustomerClient;
 import com.itmaspro.orders.rest.v1.mapper.OrderMapper;
 import com.itmaspro.general.domain.model.dto.OrderDto;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 
 @ApplicationScoped
 @Transactional
 public class UcManageOrderImpl implements UcManageOrder
 {
     @Inject
-    private OrderMapper orderMapper;
+    OrderMapper orderMapper;
     @Inject
-    private OrderDao orderDao;
-    public OrderDto createOrder( OrderDto order) {
-        if (order == null) {
-            throw new EmptyPayloadException(OrderDto.class.getSimpleName());
+    OrderDao orderDao;
+
+    @RestClient
+    CustomerClient customerClient;
+
+    public OrderDto createOrder( OrderDto order )
+    {
+        if ( order == null )
+        {
+            throw new EmptyPayloadException( OrderDto.class.getSimpleName() );
         }
 
-     /*   if (order.getCustomerId() != null) {
-
-            customersClient.findCustomerById(order.getCustomerId(), user);
-        }*/
-
-        if (order.getCart() == null || order.getCart().isEmpty()) {
-            throw new OrderServiceException( OrderServiceErrorCode.ORDER_CART_EMPTY);
+        if ( order.getCustomerId() != null )
+        {
+            CustomerDto customerDto = customerClient.findCustomerById( order.getCustomerId() );
+            System.out.println( customerDto );
         }
 
-        Date date = Date.from( Instant.now());
-
-        OrderEntity orderEntity = orderMapper.map(order);
-        orderEntity.setId(null);
-        orderEntity.setUpdatedAt(date);
-        orderEntity.setCreatedAt(date);
-        orderEntity.setStatus( OrderStatus.NEW);
-
-/*        for ( OrderItemEntity orderItemEntity : orderEntity.getCart()) {
-
-            Product product = catalogueClient.findProductById(orderItemEntity.getProductId());
-
-            orderItemEntity.setTitle(product.getTitle());
-            orderItemEntity.setCurrency(product.getCurrency());
-            orderItemEntity.setPrice(product.getPrice());
-
-            BigDecimal quantity = orderItemEntity.getQuantity() != null ? orderItemEntity.getQuantity() : BigDecimal.ONE;
-
-            orderItemEntity.setQuantity(quantity);
-            orderItemEntity.setAmount(product.getPrice().multiply(quantity));
+        if ( order.getCart() == null || order.getCart().isEmpty() )
+        {
+            throw new OrderServiceException( OrderServiceErrorCode.ORDER_CART_EMPTY );
         }
 
-        orderDAO.create(orderEntity);
+        Date date = Date.from( Instant.now() );
 
-        // Metrics
-        createMeter.mark();
+        OrderEntity orderEntity = orderMapper.map( order );
+       // orderEntity.setId( UUID.randomUUID().toString() );
+        orderEntity.setUpdatedAt( date );
+        orderEntity.setCreatedAt( date );
+        orderEntity.setStatus( OrderStatus.NEW );
 
-        productsHistogram.update(orderEntity.getCart().size());*/
+        for ( OrderItemEntity orderItemEntity : orderEntity.getCart() )
+        {
+
+            //     Product product = catalogueClient.findProductById(orderItemEntity.getProductId());
+            orderItemEntity.setId( null);
+            orderItemEntity.setTitle( "title" );
+            orderItemEntity.setCurrency( "currency" );
+            orderItemEntity.setPrice( new BigDecimal( 20 ) );
+            orderItemEntity.setOrder( orderEntity );
+            orderItemEntity.setProductId( "100" );
+            BigDecimal quantity =
+                    orderItemEntity.getQuantity() != null ? orderItemEntity.getQuantity() : BigDecimal.ONE;
+
+            orderItemEntity.setQuantity( quantity );
+            orderItemEntity.setAmount( orderItemEntity.getPrice().multiply( quantity ) );
+
+        }
         orderDao.create( orderEntity );
-        return orderMapper.map(orderEntity);
+        return orderMapper.map( orderEntity );
     }
+
+
 
     @Override
     public OrderDto updateOrder( String id, OrderDto customer)  {

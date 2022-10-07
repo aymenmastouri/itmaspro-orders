@@ -5,10 +5,8 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
-import org.eclipse.microprofile.metrics.MetricUnits;
-import org.eclipse.microprofile.metrics.annotation.Counted;
-import org.eclipse.microprofile.metrics.annotation.Gauge;
-import org.eclipse.microprofile.metrics.annotation.Timed;
+import io.micrometer.core.annotation.Counted;
+import io.micrometer.core.annotation.Timed;
 
 @Path("/")
 public class PrimeNumberChecker {
@@ -18,9 +16,7 @@ public class PrimeNumberChecker {
     @GET
     @Path("/{number}")
     @Produces( MediaType.TEXT_PLAIN)
-    @Counted( name = "performedChecks", description = "How many primality checks have been performed.")
-    @Timed( name = "checksTimer", description = "A measure of how long it takes to perform the primality test.", unit = MetricUnits.MILLISECONDS)
-    public String checkIfPrime(long number) {
+     public String checkIfPrime(long number) {
         if (number < 1) {
             return "Only natural numbers can be prime numbers.";
         }
@@ -43,10 +39,4 @@ public class PrimeNumberChecker {
         }
         return number + " is prime.";
     }
-
-    @Gauge( name = "highestPrimeNumberSoFar", unit = MetricUnits.NONE, description = "Highest prime number so far.")
-    public Long highestPrimeNumberSoFar() {
-        return highestPrimeNumberSoFar;
-    }
-
 }

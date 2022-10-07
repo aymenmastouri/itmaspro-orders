@@ -17,7 +17,6 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@EqualsAndHashCode
 @Entity
 @Table(name = "orderItems")
 public class OrderItemEntity extends ApplicationPersistenceEntity implements Serializable
