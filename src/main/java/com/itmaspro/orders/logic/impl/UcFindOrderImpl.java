@@ -27,7 +27,7 @@ public class UcFindOrderImpl implements UcFindOrder
     public OrderDto findOrderById( String id){
         OrderEntity orderEntity = orderDao.findOne(id);
         if (orderEntity == null) {
-            throw new ResourceNotFoundException( OrderDto.class.getSimpleName(), id);
+            throw new ResourceNotFoundException( OrderEntity.class.getSimpleName(), id);
         }
         return  orderMapper.map(orderEntity);
     }

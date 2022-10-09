@@ -7,14 +7,15 @@ import javax.transaction.Transactional;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Date;
-import java.util.UUID;
 
 import com.itmaspro.general.domain.model.dto.CustomerDto;
+import com.itmaspro.general.domain.model.dto.ProductDto;
 import com.itmaspro.general.domain.model.enums.OrderServiceErrorCode;
 import com.itmaspro.general.domain.model.enums.OrderStatus;
 import com.itmaspro.orders.domain.model.OrderEntity;
 import com.itmaspro.orders.domain.model.OrderItemEntity;
 import com.itmaspro.orders.domain.model.dao.OrderDao;
+import com.itmaspro.orders.logic.UcFindProduct;
 import com.itmaspro.orders.logic.UcManageOrder;
 import com.itmaspro.orders.logic.exceptions.EmptyPayloadException;
 import com.itmaspro.orders.logic.exceptions.IdMismatchException;
@@ -37,6 +38,9 @@ public class UcManageOrderImpl implements UcManageOrder
     @RestClient
     CustomerClient customerClient;
 
+    @Inject
+    UcFindProduct findProduct;
+
     public OrderDto createOrder( OrderDto order )
     {
         if ( order == null )
@@ -47,7 +51,6 @@ public class UcManageOrderImpl implements UcManageOrder
         if ( order.getCustomerId() != null )
         {
             CustomerDto customerDto = customerClient.findCustomerById( order.getCustomerId() );
-            System.out.println( customerDto );
         }
 
         if ( order.getCart() == null || order.getCart().isEmpty() )
@@ -65,20 +68,14 @@ public class UcManageOrderImpl implements UcManageOrder
 
         for ( OrderItemEntity orderItemEntity : orderEntity.getCart() )
         {
-
-            //     Product product = catalogueClient.findProductById(orderItemEntity.getProductId());
-            orderItemEntity.setId( null);
-            orderItemEntity.setTitle( "title" );
-            orderItemEntity.setCurrency( "currency" );
-            orderItemEntity.setPrice( new BigDecimal( 20 ) );
+            ProductDto product = findProduct.findProductById( orderItemEntity.getProductId() );
+            orderItemEntity.setTitle(product.getTitle());
+            orderItemEntity.setCurrency(product.getCurrency());
+            orderItemEntity.setPrice(product.getPrice());
+            BigDecimal quantity = orderItemEntity.getQuantity() != null ? orderItemEntity.getQuantity() : BigDecimal.ONE;
+            orderItemEntity.setQuantity(quantity);
+            orderItemEntity.setAmount(product.getPrice().multiply(quantity));
             orderItemEntity.setOrder( orderEntity );
-            orderItemEntity.setProductId( "100" );
-            BigDecimal quantity =
-                    orderItemEntity.getQuantity() != null ? orderItemEntity.getQuantity() : BigDecimal.ONE;
-
-            orderItemEntity.setQuantity( quantity );
-            orderItemEntity.setAmount( orderItemEntity.getPrice().multiply( quantity ) );
-
         }
         orderDao.create( orderEntity );
         return orderMapper.map( orderEntity );
